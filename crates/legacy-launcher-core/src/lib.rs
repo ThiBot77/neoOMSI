@@ -1367,7 +1367,8 @@ fn dsc_candidates(file: &Path, lang: &str) -> Vec<PathBuf> {
         .collect()
 }
 
-fn omsi_suffix(lang: &str) -> &str {
+/// OMSI's three-letter name of a language in its file names (`_ENG.dsc`, `DEU_key_game.olf`).
+pub fn omsi_suffix(lang: &str) -> &str {
     match lang {
         "en" => "ENG",
         "de" => "DEU",

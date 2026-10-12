@@ -47,8 +47,10 @@ impl ControlNames {
                         .file_name()
                         .map(|n| n.to_string_lossy().to_ascii_lowercase())
                         .unwrap_or_default();
-                    n.starts_with(&format!("{}_key_", lang.to_ascii_lowercase()))
-                        && n.ends_with(".olf")
+                    n.starts_with(&format!(
+                        "{}_key_",
+                        omsi_launcher_lib::omsi_suffix(&lang).to_ascii_lowercase()
+                    )) && n.ends_with(".olf")
                 })
                 .collect();
             files.sort();
@@ -841,6 +843,28 @@ mod tests {
                 ("IBIS_loeschen", "IBIS: Delete"),
             ],
         )
+    }
+
+    #[test]
+    fn key_names_load_from_the_omsi_language_files() {
+        let root = std::env::temp_dir().join(format!("neoomsi_key_names_{}", std::process::id()));
+        let dir = root.join("Languages");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("ENG_key_game.olf"),
+            "ENG\t\r\nKY_parking_brake_toggle\tParking Brake On/Off\r\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("DEU_key_game.olf"),
+            "DEU\t\r\nKY_parking_brake_toggle\tFeststellbremse\r\n",
+        )
+        .unwrap();
+        let en = ControlNames::load(&root, "en");
+        assert_eq!(en.control("parking_brake_toggle"), "Parking Brake On/Off");
+        let de = ControlNames::load(&root, "deutsch");
+        assert_eq!(de.control("parking_brake_toggle"), "Feststellbremse");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
