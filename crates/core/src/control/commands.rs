@@ -65,6 +65,19 @@ pub(super) fn forget_content() {
     super::minimap::forget();
 }
 
+/// The airports of OMSI's METAR list, as the launcher offers them.
+fn metar_airport_list(root: &Path) -> Vec<api::MetarStation> {
+    crate::weather_setup::metar_airports(root)
+        .into_iter()
+        .map(|(icao, label)| api::MetarStation {
+            name: label
+                .split_once(" - ")
+                .map_or_else(String::new, |(_, name)| name.to_string()),
+            icao,
+        })
+        .collect()
+}
+
 fn list<T, U: From<T>>(items: Vec<T>) -> Vec<U> {
     items.into_iter().map(Into::into).collect()
 }
@@ -117,6 +130,7 @@ pub(super) fn call(command: Command) -> Result<Answer> {
                         icao: station.icao,
                         name: station.name,
                     }),
+                airports: metar_airport_list(&root),
             })
         }
         Command::Lines(a) => Answer::Lines(api::LineList {
@@ -587,6 +601,30 @@ fn save_controllers(list: &[Controller]) -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn the_launcher_gets_the_airports_of_omsis_metar_list() {
+        let root = std::env::temp_dir().join(format!("neoomsi_metar_list_{}", std::process::id()));
+        std::fs::create_dir_all(root.join("Weather")).unwrap();
+        std::fs::write(
+            root.join("Weather/ICAO.txt"),
+            "EDDH - Hamburg\r\nLFPO - Paris Orly\r\nnot an airport\r\n",
+        )
+        .unwrap();
+        let list: Vec<(String, String)> = metar_airport_list(&root)
+            .into_iter()
+            .map(|a| (a.icao, a.name))
+            .collect();
+        assert_eq!(
+            list,
+            vec![
+                ("EDDB".to_string(), "Berlin Brandenburg".to_string()),
+                ("EDDH".to_string(), "Hamburg".to_string()),
+                ("LFPO".to_string(), "Paris Orly".to_string()),
+            ]
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn a_controller_round_trips_and_keeps_what_the_page_does_not_show() {
