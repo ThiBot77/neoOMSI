@@ -191,6 +191,8 @@ pub struct StartUi {
     pub drops: Vec<[f32; 4]>,
     pub drop_items: Vec<[f32; 4]>,
     pub drop_box: [f32; 4],
+    /// Last frame's open dropdown box, kept across `clear`.
+    pub drop_last: [f32; 4],
     /// A dropdown list waiting to be drawn on top of the page: [x0, y, x1, _].
     pub drop_pending: Option<[f32; 4]>,
     pub drop_first: usize,
